@@ -71,12 +71,14 @@ def run_with_p(p):
 
 
     everyone_are_happy = False
+    #draw_lattice(spin_matrix, vacancy_matrix)
     while not everyone_are_happy:
         run_cycle(vacancy_matrix, spin_matrix, non_vacants, vacants)
         everyone_are_happy = everyone_happy(spin_matrix, non_vacants)
     density = compute_density(spin_matrix, vacancy_matrix, non_vacants)
-    return density
+
     #draw_lattice(spin_matrix, vacancy_matrix)
+    return density
 
     
 
@@ -187,7 +189,7 @@ def is_happy(spin, location):
 
 
 p_values = [0.1, 0.2, 0.3, 0.4, 0.5]
-#p_values = [0.1]
+#p_values = [0.2]
 
 results = []
 
@@ -203,9 +205,17 @@ for p in p_values:
     print('Total: %f Average: %f' % (total, average))
     results.append(average)
 
-plt.plot(p_values, results, 'go')
+plt.plot(p_values, results, 'bo')
 plt.ylabel('Average Density')
 plt.xlabel('Probability for Vacant Site')
+
+# calc the trendline (it is simply a linear fitting)
+z = np.polyfit(p_values, results, 1)
+p = np.poly1d(z)
+#plt.errorbar(p_values, results, yerr = p(p_values), fmt = 'o')
+
+plt.plot(p_values,p(p_values),"g-")
+
 plt.title("Schelling model- %d X %d Lattice" % (N,N))
 plt.show()
 
