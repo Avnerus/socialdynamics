@@ -10,7 +10,7 @@ import numpy as np
 from scipy import signal
 
 N = 30 
-SIMULATIONS = 1
+SIMULATIONS = 20 
 
 NEIGHBORS = np.ones((3,3))
 NEIGHBORS[1,1] = 0
@@ -44,7 +44,7 @@ def run_with_p(p):
                 number_of_non_vacant += 1
                 non_vacants.append((i,j))
 
-    print ("%d non vacant sites :" % len(non_vacants), non_vacants)
+    #print ("%d non vacant sites :" % len(non_vacants), non_vacants)
 
     non_vacants_queue = list(non_vacants)
     # Choosing half
@@ -59,9 +59,9 @@ def run_with_p(p):
         spin_matrix[i,j] = 0
         number_of_spin_down += 1
 
-    print('Number of vacant sites: %d, Non-vacant: %d. Spin-Ups: %d, Spin Downs: %d' % (number_of_vacant, number_of_non_vacant, number_of_spin_up,number_of_spin_down))
-    print(vacancy_matrix)
-    print(spin_matrix)
+    #print('Number of vacant sites: %d, Non-vacant: %d. Spin-Ups: %d, Spin Downs: %d' % (number_of_vacant, number_of_non_vacant, number_of_spin_up,number_of_spin_down))
+    #print(vacancy_matrix)
+    #print(spin_matrix)
 
     global neighbour_count
     global spinup_count
@@ -74,12 +74,31 @@ def run_with_p(p):
     while not everyone_are_happy:
         run_cycle(vacancy_matrix, spin_matrix, non_vacants, vacants)
         everyone_are_happy = everyone_happy(spin_matrix, non_vacants)
-    print('Everyone happy?', everyone_are_happy)
-    draw_lattice(spin_matrix, vacancy_matrix)
+    density = compute_density(spin_matrix, vacancy_matrix, non_vacants)
+    return density
+    #draw_lattice(spin_matrix, vacancy_matrix)
 
     
 
     return 0
+
+def compute_density(spin_matrix, vacancy_matrix, non_vacants):
+    pairs = {}
+    pair_count = 0
+    for location in non_vacants:
+        (i,j) = location
+        for x in [i-1, i, i+1]:
+            for y in [j-1, j, j+1]:
+                if (x > 0 and x < N and y > 0 and y < N and vacancy_matrix[x,y] == 1 and spin_matrix[x,y] != spin_matrix[i,j]):
+                    pair = ((i,j),(x,y))
+                    rpair = ((x,y), (i,j))
+                    if not pair in pairs and not rpair in pairs:
+                        pair_count += 1
+                        pairs[pair] = pair_count
+
+    return pair_count / float(N * N * 2)
+
+
 
 def draw_lattice(spin_matrix, vacancy_matrix):
     show_matrix = np.zeros((N,N))
@@ -94,6 +113,7 @@ def draw_lattice(spin_matrix, vacancy_matrix):
                 show_matrix[i,j] = 0.2
 
     plt.imshow(show_matrix, interpolation='none')
+    plt.grid(True)
     plt.show()
 
 def run_cycle(vacancy_matrix, spin_matrix, non_vacants, vacants):
@@ -139,7 +159,7 @@ def everyone_happy(spin_matrix, non_vacants):
         happy = is_happy(spin_matrix[location], location)
         index += 1
 
-    print index
+    #print index
     return happy
 
 
@@ -166,8 +186,8 @@ def is_happy(spin, location):
 
 
 
-#p_values = [0.1, 0.2, 0.3, 0.4, 0.5]
-p_values = [0.1]
+p_values = [0.1, 0.2, 0.3, 0.4, 0.5]
+#p_values = [0.1]
 
 results = []
 
@@ -176,7 +196,7 @@ for p in p_values:
     total = 0
     for i in range(SIMULATIONS):
         density = run_with_p(p)
-        print('%d - Density %d' % (i, density))
+        print('%d - Density %f' % (i, density))
         total += density
 
     average = total / float(SIMULATIONS)
@@ -187,6 +207,6 @@ plt.plot(p_values, results, 'go')
 plt.ylabel('Average Density')
 plt.xlabel('Probability for Vacant Site')
 plt.title("Schelling model- %d X %d Lattice" % (N,N))
-#plt.show()
+plt.show()
 
 
