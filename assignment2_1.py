@@ -99,7 +99,7 @@ for confidence_bound in confidence_bounds:
     print('Confidence bound %f' % confidence_bound)
     total = 0
     for i in range(SIMULATIONS):
-        macro_clusters = run_with_confidence_bound(0.5)
+        macro_clusters = run_with_confidence_bound(confidence_bound)
         print('%d - %d macro clusters ' % (i, macro_clusters))
         total += macro_clusters
     average = total / float(SIMULATIONS)

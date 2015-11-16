@@ -8,9 +8,11 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
+from scipy import optimize
+from scipy import interpolate   
 
 N = 30 
-SIMULATIONS = 20 
+SIMULATIONS = 30
 
 NEIGHBORS = np.ones((3,3))
 NEIGHBORS[1,1] = 0
@@ -71,13 +73,13 @@ def run_with_p(p):
 
 
     everyone_are_happy = False
-    #draw_lattice(spin_matrix, vacancy_matrix)
+    #draw_lattice(spin_matrix, vacancy_matrix, p, 'Start')
     while not everyone_are_happy:
         run_cycle(vacancy_matrix, spin_matrix, non_vacants, vacants)
         everyone_are_happy = everyone_happy(spin_matrix, non_vacants)
     density = compute_density(spin_matrix, vacancy_matrix, non_vacants)
 
-    #draw_lattice(spin_matrix, vacancy_matrix)
+    #draw_lattice(spin_matrix, vacancy_matrix, p, 'End')
     return density
 
     
@@ -102,7 +104,7 @@ def compute_density(spin_matrix, vacancy_matrix, non_vacants):
 
 
 
-def draw_lattice(spin_matrix, vacancy_matrix):
+def draw_lattice(spin_matrix, vacancy_matrix, p, state):
     show_matrix = np.zeros((N,N))
     for i in range(N):
         for (j) in range(N):
@@ -115,6 +117,7 @@ def draw_lattice(spin_matrix, vacancy_matrix):
                 show_matrix[i,j] = 0.2
 
     plt.imshow(show_matrix, interpolation='none')
+    plt.title('%s State - P=%.1f N=%d' % (state, p, N))
     plt.grid(True)
     plt.show()
 
@@ -188,33 +191,45 @@ def is_happy(spin, location):
 
 
 
-p_values = [0.1, 0.2, 0.3, 0.4, 0.5]
+#p_values = [0.1, 0.2, 0.3, 0.4, 0.5]
+p_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 #p_values = [0.2]
 
 results = []
+stds = []
 
 for p in p_values:
     print('Vacant probablity %f' % p)
-    total = 0
+    simulations = []
     for i in range(SIMULATIONS):
         density = run_with_p(p)
+        simulations.append(density)
         print('%d - Density %f' % (i, density))
-        total += density
 
-    average = total / float(SIMULATIONS)
-    print('Total: %f Average: %f' % (total, average))
-    results.append(average)
+    mean = np.mean(simulations)
+    std = np.std(simulations)
+    print('Mean: %f Std: %f' % (mean, std))
+    results.append(mean)
+    stds.append(std)
 
-plt.plot(p_values, results, 'bo')
-plt.ylabel('Average Density')
+#plt.plot(p_values, results, 'g-')
+plt.ylabel('Mean Density')
 plt.xlabel('Probability for Vacant Site')
 
-# calc the trendline (it is simply a linear fitting)
-z = np.polyfit(p_values, results, 1)
-p = np.poly1d(z)
-#plt.errorbar(p_values, results, yerr = p(p_values), fmt = 'o')
+# calc the trendline (if it is simply a linear fitting)
+#z = np.polyfit(p_values, results, 2)
+#p = np.poly1d(z)
 
-plt.plot(p_values,p(p_values),"g-")
+
+#yinterp = interpolate.UnivariateSpline(p_values, results, s=0.1, k=4)(p_values) 
+
+tck = interpolate.splrep(p_values, results)
+x2 = np.linspace(0.1,0.9, 200)
+y2 = interpolate.splev(x2, tck)
+plt.plot(p_values, results, 'o', x2, y2)
+plt.errorbar(x=p_values, y=results, yerr = stds, fmt = 'o')
+#plt.plot(p_values,yinterp,"r-")
+#plt.plot(p_values,p(p_values),"g-")
 
 plt.title("Schelling model- %d X %d Lattice" % (N,N))
 plt.show()
