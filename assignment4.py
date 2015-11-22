@@ -4,14 +4,14 @@ Investigate the Axelrod model on a 2-dimensional square lattice
 """
 
 import random
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 #from scipy import interpolate   
 import networkx as nx
 import time
 import numpy as np
 
 N = 20
-SIMULATIONS = 100
+SIMULATIONS = 1
 F = 2 
 CYCLES = 400
 
@@ -42,7 +42,7 @@ def run_with_q(q):
     result = get_cultural_domains(G)    
     print result
     #print potential_edges
-    #draw_lattice(G)
+    draw_lattice(G)
 
     return result['percentage']
 
@@ -119,12 +119,11 @@ def run_cycle(G,potential_edges):
             for edge in changed_edges:
                 match_data = get_match_data(G, edge)
                 is_potential =  (match_data['percent'] > 0 and match_data['percent'] < 1)
-                if is_potential and not edge in potential_edges:
+                if is_potential:
                     #print('The edge %s was not in potential edges but now it is! (%s <==> %s)' % (str(edge),str(G.node[edge[0]]['traits']),str(G.node[edge[1]]['traits'])))
                     potential_edges[edge] = match_data
                 if not is_potential and edge in potential_edges:
                     #print('The edge %s was in potential edges but now it is not! (%s <==> %s)' % (str(edge),str(G.node[edge[0]]['traits']),str(G.node[edge[1]]['traits'])))
-
                     potential_edges.pop(edge, None)
 
         #time.sleep(0.1)
@@ -132,18 +131,28 @@ def run_cycle(G,potential_edges):
                 
 
 def draw_lattice(G):
-    traits = nx.get_node_attributes(G, 'traits')
-    pos=nx.spring_layout(G, iterations=100)
+    # Divide domain to colors
+    domains = {}
+    for n,d in G.nodes_iter(data=True):
+        traits = str(d['traits'])
+        if not traits in domains:
+            domains[traits] = {'nodes': [], 'color': [random.random(), random.random(), random.random()]} 
+        domains[traits]['nodes'].append(n)
 
-    nx.draw_networkx_nodes(G,pos,node_size=1000)
+    pos = dict( (n, n) for n in G.nodes()  )
+    traits = nx.get_node_attributes(G, 'traits')
+
+    for key,domain in domains.iteritems():
+        nx.draw_networkx_nodes(G,pos,nodelist=domain['nodes'], node_size=200, node_color=domain['color'])
+
     nx.draw_networkx_edges(G,pos,width=2)
-    nx.draw_networkx_labels(G,pos, labels=traits)
+#    nx.draw_networkx_labels(G,pos, labels=traits)
 
     plt.show()
 
 
-#q_values = [50]
-q_values = range(2, 101)
+q_values = [9]
+#q_values = range(2, 101)
 
 results = []
 stds = []
