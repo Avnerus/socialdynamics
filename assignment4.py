@@ -42,7 +42,7 @@ def run_with_q(q):
     result = get_cultural_domains(G)    
     print result
     #print potential_edges
-    draw_lattice(G)
+    draw_lattice(G,q)
 
     return result['percentage']
 
@@ -130,7 +130,7 @@ def run_cycle(G,potential_edges):
         cycle += 1
                 
 
-def draw_lattice(G):
+def draw_lattice(G,q):
     # Divide domain to colors
     domains = {}
     for n,d in G.nodes_iter(data=True):
@@ -148,10 +148,11 @@ def draw_lattice(G):
     nx.draw_networkx_edges(G,pos,width=2)
 #    nx.draw_networkx_labels(G,pos, labels=traits)
 
+    plt.title(" %d X %d Lattice - %d Traits" % (N,N,q))
     plt.show()
 
 
-q_values = [9]
+q_values = [4]
 #q_values = range(2, 101)
 
 results = []
