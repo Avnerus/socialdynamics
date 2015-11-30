@@ -2,13 +2,13 @@
 # Based on https://github.com/hemmer/comp-phys-tests/blob/master/monte-carlo/pyVicsek/vicsek.py
 
 import numpy as np
-from pylab import *
-import matplotlib.pyplot as plt
+#from pylab import *
+#import matplotlib.pyplot as plt
 import sys
 
 class VicsekModel(object):
 
-    def __init__(self, L=7, eta=2.0, N=300, num_steps=10, r=1.0, dt=1, v=0.03):
+    def __init__(self, L=7, eta=2.0, N=300, num_steps=10, simulations=1, r=1.0, dt=1, v=0.03):
 
         self.L = L              # length of box
         self.halfL = L * 0.5    # used for periodic BCs
@@ -18,6 +18,7 @@ class VicsekModel(object):
         self.dt = dt        # timestep size
         self.v = v          # magnitude of velocity
         self.num_steps = num_steps
+        self.simulations = simulations
 
         self.velocities = np.zeros((N, 2))
         self.angles = np.zeros(N)
@@ -43,7 +44,7 @@ class VicsekModel(object):
 
     # this is where the main experiment is carried out
     def main(self, visual_mode):
-
+        print('==Running vicsek model== %d Particles, %d simulations with noise eta %f ' % (self.N, self.simulations, self.eta))
 
         # set up plotting stuff
         if visual_mode:
@@ -55,8 +56,12 @@ class VicsekModel(object):
 
             # reset positions
             self.initialise_experiment()
+            lastv_a = 0
+            diff = 1
 
-            for i in xrange(100):
+
+            while(diff > 0.0001):
+
                 for step in xrange(self.num_steps):
                     self.perform_step()
 
@@ -64,29 +69,44 @@ class VicsekModel(object):
                 wframe = self.plot_grid(ax)
                 if oldcol:
                     ax.collections.remove(oldcol)
-                plt.draw()
 
-            print "for eta =", self.eta, " v_a =", self.find_avg_norm_vel()
+                v_a = self.find_avg_vel()
+                diff = v_a - lastv_a
+                #print "v_a =", v_a, 'diff: ', diff
+                plt.draw()
+                lastv_a = v_a
 
         # otherwise we are in data intensive mode
         else:
 
-            # print header
-            print "eta\tv_a"
+            results = []
 
-            for i in xrange(100):
-                
+            for i in range(self.simulations):
+                #print('Simulation %d ' % i)
 
                 # reset positions
                 self.initialise_experiment()
+                lastv_a = 0
+                diff = 1
 
-                for step in xrange(self.num_steps):
-                    self.perform_step()
+                while(diff > 0.0001):
+                    
+                    for step in xrange(self.num_steps):
+                        self.perform_step()
 
-                print("Cycle")
-                print self.eta, "\t", self.find_avg_norm_vel()
+                    v_a = self.find_avg_vel()
+                    diff = v_a - lastv_a
+                    #print "v_a =", v_a, 'diff: ', diff
+                    lastv_a = v_a
 
-        print "experiment finished"
+
+                #print "Stationary at v_a %f" % lastv_a
+                results.append(lastv_a)
+
+        mean = np.mean(results)
+        std = np.std(results)
+
+        return (mean, std)
 
     # perform one timestep
     def perform_step(self):
@@ -211,7 +231,9 @@ class VicsekModel(object):
     def find_avg_vel(self):
 
         mean_v = np.sum(self.velocities, axis=0)
-        return mean_v / self.N
+        mag_mean_v = np.power(np.sum(np.power(mean_v, 2)), 0.5)
+
+        return mag_mean_v / (self.N)
 
     def plot_grid(self, ax):
         plotx = self.positions[:, 0]
@@ -225,19 +247,33 @@ class VicsekModel(object):
 N, L = 400, 5
 
 rho = N / float(L * L)
-eta = 0.1
+eta = 4
 num_steps = N
+simulations = 100 
+
+
 print "num particles:", N
 print "system size:", L
 print "density:", rho
 print "num steps:", num_steps
 
-sim = VicsekModel(L, eta, N, num_steps)
+eta_values = np.arange(2.71, 2*np.pi, 0.3)
+y_values = []
+stds = []
 
+for eta in eta_values:
 
-if len(sys.argv) > 1:
-    print "using visual mode"
-    sim.main(True)
-else:
-    print "using data intensive mode"
-    sim.main(False)
+    sim = VicsekModel(L, eta, N, num_steps, simulations)
+    if len(sys.argv) > 1:
+        print "using visual mode"
+        sim.main(True)
+    else:
+        print "using data intensive mode"
+        (mean, std) = sim.main(False)
+        print('Mean: %f STD: %f' % (mean, std))
+        y_values.append(mean)
+        stds.append(std)
+
+print('Y:', y_values)
+print('STD: ', stds)
+
